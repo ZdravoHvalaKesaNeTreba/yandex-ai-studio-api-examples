@@ -12,7 +12,7 @@
         <!-- Шапка -->
         <header class="header">
             <div class="status-badge" id="statusBadge">
-                <span class="status-text">Готов к работе</span>
+                <span class="status-text">Инициализация...</span>
             </div>
         </header>
 
@@ -37,6 +37,13 @@
         <!-- Подвал с кнопками -->
         <footer class="footer">
             <div class="controls">
+                <!-- Кнопка настройки -->
+                <button class="btn-settings" id="settingsButton" aria-label="Настройки" style="display: none;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="currentColor"/>
+                    </svg>
+                </button>
+                
                 <!-- Кнопка микрофона -->
                 <button class="btn-mic" id="micButton" aria-label="Микрофон">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -53,6 +60,59 @@
                 </button>
             </div>
         </footer>
+    </div>
+
+    <!-- Модальное окно настройки -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Настройка подключения</h2>
+                <p class="modal-subtitle">Введите креденшалы Yandex Cloud</p>
+            </div>
+            
+            <form id="settingsForm" class="settings-form">
+                <div class="form-group">
+                    <label for="folderId">Folder ID</label>
+                    <input 
+                        type="text" 
+                        id="folderId" 
+                        name="folderId" 
+                        placeholder="b1gxxxxxxxxxxxxxxxxxx"
+                        required
+                    />
+                    <span class="form-hint">ID каталога из консоли Yandex Cloud</span>
+                </div>
+                
+                <div class="form-group">
+                    <label for="apiKey">API Key</label>
+                    <input 
+                        type="password" 
+                        id="apiKey" 
+                        name="apiKey" 
+                        placeholder="AQVNxxxxxxxxxxxxxxxxxxxxxx"
+                        required
+                    />
+                    <span class="form-hint">API ключ для аутентификации</span>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary" id="saveButton">
+                        <span class="btn-text">Проверить и сохранить</span>
+                        <span class="btn-loader" style="display: none;"></span>
+                    </button>
+                </div>
+                
+                <div class="form-status" id="formStatus" style="display: none;"></div>
+            </form>
+            
+            <div class="modal-footer">
+                <p>Получите креденшалы в 
+                    <a href="https://console.yandex.cloud/" target="_blank" rel="noopener">
+                        консоли Yandex Cloud
+                    </a>
+                </p>
+            </div>
+        </div>
     </div>
 
     <!-- Скрипты -->

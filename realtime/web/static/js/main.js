@@ -8,18 +8,25 @@ class VoiceAssistant {
         this.isPlaying = false;
         this.isRecording = false;
         this.isSessionActive = false;
+        this.credentials = null;
         
         this.initElements();
         this.initSocket();
         this.initEventListeners();
+        this.checkCredentials();
     }
     
     initElements() {
         this.micButton = document.getElementById('micButton');
         this.stopButton = document.getElementById('stopButton');
+        this.settingsButton = document.getElementById('settingsButton');
         this.statusBadge = document.getElementById('statusBadge');
         this.dotsContainer = document.getElementById('dotsContainer');
         this.transcriptArea = document.getElementById('transcriptArea');
+        this.settingsModal = document.getElementById('settingsModal');
+        this.settingsForm = document.getElementById('settingsForm');
+        this.formStatus = document.getElementById('formStatus');
+        this.saveButton = document.getElementById('saveButton');
     }
     
     initSocket() {
@@ -27,12 +34,11 @@ class VoiceAssistant {
         
         this.socket.on('connect', () => {
             console.log('Подключено к серверу');
-            this.updateStatus('Готов к работе');
         });
         
         this.socket.on('disconnect', () => {
             console.log('Отключено от сервера');
-            this.updateStatus('Отключено');
+            this.updateStatus('Отключено', 'error');
             this.stopSession();
         });
         
@@ -59,7 +65,6 @@ class VoiceAssistant {
         });
         
         this.socket.on('audio_data', (data) => {
-            // Получаем аудио данные от сервера
             this.playAudioChunk(data.audio);
         });
         
@@ -71,13 +76,17 @@ class VoiceAssistant {
         
         this.socket.on('error', (data) => {
             console.error('Ошибка:', data.message);
-            alert('Ошибка: ' + data.message);
+            this.showError(data.message);
             this.stopSession();
         });
     }
     
     initEventListeners() {
         this.micButton.addEventListener('click', () => {
+            if (!this.credentials) {
+                this.showSettings();
+                return;
+            }
             if (!this.isRecording) {
                 this.startRecording();
             }
@@ -86,9 +95,163 @@ class VoiceAssistant {
         this.stopButton.addEventListener('click', () => {
             this.stopSession();
         });
+        
+        this.settingsButton.addEventListener('click', () => {
+            this.showSettings();
+        });
+        
+        this.settingsForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveCredentials();
+        });
+        
+        // Закрытие модального окна по клику на фон
+        this.settingsModal.addEventListener('click', (e) => {
+            if (e.target === this.settingsModal) {
+                this.hideSettings();
+            }
+        });
+    }
+    
+    checkCredentials() {
+        // Проверяем сохраненные креденшалы в localStorage
+        const savedCreds = localStorage.getItem('yandex_credentials');
+        if (savedCreds) {
+            try {
+                this.credentials = JSON.parse(savedCreds);
+                this.validateCredentials();
+            } catch (e) {
+                console.error('Ошибка парсинга креденшалов:', e);
+                this.showSettings();
+            }
+        } else {
+            this.showSettings();
+        }
+    }
+    
+    async validateCredentials() {
+        this.updateStatus('Проверка подключения...', 'checking');
+        
+        try {
+            const response = await fetch('/api/validate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(this.credentials)
+            });
+            
+            const result = await response.json();
+            
+            if (result.valid) {
+                this.updateStatus('Готов к работе');
+                this.settingsButton.style.display = 'flex';
+                this.micButton.disabled = false;
+            } else {
+                this.updateStatus('Ошибка подключения', 'error');
+                this.showSettings();
+                this.showFormStatus(result.message, 'error');
+            }
+        } catch (error) {
+            console.error('Ошибка валидации:', error);
+            this.updateStatus('Ошибка подключения', 'error');
+            this.showSettings();
+            this.showFormStatus('Не удалось подключиться к серверу', 'error');
+        }
+    }
+    
+    async saveCredentials() {
+        const folderId = document.getElementById('folderId').value.trim();
+        const apiKey = document.getElementById('apiKey').value.trim();
+        
+        if (!folderId || !apiKey) {
+            this.showFormStatus('Заполните все поля', 'error');
+            return;
+        }
+        
+        // Показываем лоадер
+        this.saveButton.disabled = true;
+        this.saveButton.querySelector('.btn-text').textContent = 'Проверка...';
+        this.saveButton.querySelector('.btn-loader').style.display = 'block';
+        this.formStatus.style.display = 'none';
+        
+        try {
+            const response = await fetch('/api/validate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    folder_id: folderId,
+                    api_key: apiKey
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.valid) {
+                // Сохраняем креденшалы
+                this.credentials = {
+                    folder_id: folderId,
+                    api_key: apiKey
+                };
+                localStorage.setItem('yandex_credentials', JSON.stringify(this.credentials));
+                
+                // Показываем успех
+                this.showFormStatus('✓ Подключение успешно!', 'success');
+                
+                // Закрываем модальное окно через 1 секунду
+                setTimeout(() => {
+                    this.hideSettings();
+                    this.updateStatus('Готов к работе');
+                    this.settingsButton.style.display = 'flex';
+                    this.micButton.disabled = false;
+                }, 1000);
+            } else {
+                this.showFormStatus(result.message, 'error');
+            }
+        } catch (error) {
+            console.error('Ошибка сохранения:', error);
+            this.showFormStatus('Не удалось подключиться к серверу', 'error');
+        } finally {
+            this.saveButton.disabled = false;
+            this.saveButton.querySelector('.btn-text').textContent = 'Проверить и сохранить';
+            this.saveButton.querySelector('.btn-loader').style.display = 'none';
+        }
+    }
+    
+    showSettings() {
+        this.settingsModal.classList.add('show');
+        
+        // Загружаем сохраненные значения
+        if (this.credentials) {
+            document.getElementById('folderId').value = this.credentials.folder_id || '';
+            document.getElementById('apiKey').value = this.credentials.api_key || '';
+        }
+        
+        this.formStatus.style.display = 'none';
+    }
+    
+    hideSettings() {
+        this.settingsModal.classList.remove('show');
+    }
+    
+    showFormStatus(message, type) {
+        this.formStatus.textContent = message;
+        this.formStatus.className = `form-status ${type}`;
+        this.formStatus.style.display = 'block';
+    }
+    
+    showError(message) {
+        alert(message);
     }
     
     async startRecording() {
+        if (!this.credentials) {
+            this.showSettings();
+            return;
+        }
+        
         try {
             // Запрашиваем доступ к микрофону
             const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -100,8 +263,8 @@ class VoiceAssistant {
                 } 
             });
             
-            // Запускаем сессию на сервере
-            this.socket.emit('start_session');
+            // Запускаем сессию на сервере с креденшалами
+            this.socket.emit('start_session', this.credentials);
             
             // Инициализируем AudioContext для обработки аудио
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
@@ -184,7 +347,7 @@ class VoiceAssistant {
         const statusText = this.statusBadge.querySelector('.status-text');
         statusText.textContent = text;
         
-        this.statusBadge.classList.remove('active', 'listening');
+        this.statusBadge.classList.remove('active', 'listening', 'error', 'checking');
         if (state) {
             this.statusBadge.classList.add(state);
         }
@@ -256,7 +419,9 @@ class VoiceAssistant {
             
             source.onended = () => {
                 this.dotsContainer.classList.remove('speaking');
-                this.dotsContainer.classList.add('listening');
+                if (this.isRecording) {
+                    this.dotsContainer.classList.add('listening');
+                }
             };
             
         } catch (error) {
@@ -297,11 +462,4 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('gesturestart', (e) => {
         e.preventDefault();
     });
-    
-    // Предотвращение выделения текста при долгом нажатии
-    document.addEventListener('touchstart', (e) => {
-        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-            e.preventDefault();
-        }
-    }, { passive: false });
 });

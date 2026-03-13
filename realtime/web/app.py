@@ -10,7 +10,7 @@ import os
 from threading import Thread
 
 import aiohttp
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 
@@ -28,20 +28,22 @@ app.config['SECRET_KEY'] = 'yandex-voice-agent-secret-key'
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
-# Креденшалы из переменных окружения
-YANDEX_CLOUD_FOLDER_ID = os.getenv("YANDEX_CLOUD_FOLDER_ID", "")
-YANDEX_CLOUD_API_KEY = os.getenv("YANDEX_CLOUD_API_KEY", "")
+# Креденшалы из переменных окружения (опционально)
+DEFAULT_FOLDER_ID = os.getenv("YANDEX_CLOUD_FOLDER_ID", "")
+DEFAULT_API_KEY = os.getenv("YANDEX_CLOUD_API_KEY", "")
 
-assert YANDEX_CLOUD_FOLDER_ID and YANDEX_CLOUD_API_KEY, (
-    "YANDEX_CLOUD_FOLDER_ID и YANDEX_CLOUD_API_KEY обязательны"
-)
 
-WSS_URL = (
-    f"wss://rest-assistant.api.cloud.yandex.net/v1/realtime/openai"
-    f"?model=gpt://{YANDEX_CLOUD_FOLDER_ID}/speech-realtime-250923"
-)
+def get_wss_url(folder_id):
+    """Построение URL для WebSocket"""
+    return (
+        f"wss://rest-assistant.api.cloud.yandex.net/v1/realtime/openai"
+        f"?model=gpt://{folder_id}/speech-realtime-250923"
+    )
 
-HEADERS = {"Authorization": f"api-key {YANDEX_CLOUD_API_KEY}"}
+
+def get_headers(api_key):
+    """Получение заголовков для авторизации"""
+    return {"Authorization": f"api-key {api_key}"}
 
 
 # Вспомогательные функции
@@ -60,10 +62,14 @@ active_sessions = {}
 class VoiceSession:
     """Класс для управления голосовой сессией"""
     
-    def __init__(self, sid):
+    def __init__(self, sid, folder_id, api_key):
         self.sid = sid
+        self.folder_id = folder_id
+        self.api_key = api_key
         self.ws = None
         self.running = False
+        self.wss_url = get_wss_url(folder_id)
+        self.headers = get_headers(api_key)
         
     async def setup_session(self):
         """Настройка сессии"""
@@ -148,7 +154,7 @@ class VoiceSession:
         try:
             self.running = True
             async with aiohttp.ClientSession() as session:
-                async with session.ws_connect(WSS_URL, headers=HEADERS, heartbeat=20.0) as ws:
+                async with session.ws_connect(self.wss_url, headers=self.headers, heartbeat=20.0) as ws:
                     self.ws = ws
                     logger.info(f"Сессия {self.sid} подключена к Realtime API")
                     
@@ -179,10 +185,77 @@ def run_async_session(session):
     asyncio.run(session.start())
 
 
+async def validate_credentials(folder_id, api_key):
+    """Проверка валидности креденшалов"""
+    try:
+        wss_url = get_wss_url(folder_id)
+        headers = get_headers(api_key)
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.ws_connect(wss_url, headers=headers, heartbeat=20.0, timeout=aiohttp.ClientTimeout(total=10)) as ws:
+                # Отправляем простой запрос
+                await ws.send_json({
+                    "type": "session.update",
+                    "session": {
+                        "modalities": ["audio"],
+                        "voice": "dasha"
+                    }
+                })
+                
+                # Ждем ответ
+                msg = await asyncio.wait_for(ws.receive(), timeout=5.0)
+                
+                if msg.type == aiohttp.WSMsgType.TEXT:
+                    data = json.loads(msg.data)
+                    # Если получили корректный ответ - креды валидны
+                    if data.get("type") in ["session.created", "session.updated"]:
+                        return True, "Креденшалы валидны"
+                
+                return False, "Неожиданный ответ от сервера"
+                
+    except asyncio.TimeoutError:
+        return False, "Время ожидания истекло. Проверьте креденшалы."
+    except aiohttp.ClientConnectorError:
+        return False, "Не удалось подключиться к серверу. Проверьте интернет соединение."
+    except Exception as e:
+        error_msg = str(e)
+        if "UNAUTHENTICATED" in error_msg or "api key" in error_msg.lower():
+            return False, "Неверный API ключ"
+        elif "NXDOMAIN" in error_msg or "nodename" in error_msg:
+            return False, "Сервер недоступен. Проверьте URL API."
+        else:
+            return False, f"Ошибка: {error_msg}"
+
+
 @app.route('/')
 def index():
     """Главная страница"""
     return render_template('index.html')
+
+
+@app.route('/api/validate', methods=['POST'])
+def validate():
+    """Валидация креденшалов"""
+    data = request.get_json()
+    folder_id = data.get('folder_id', '').strip()
+    api_key = data.get('api_key', '').strip()
+    
+    if not folder_id or not api_key:
+        return jsonify({
+            'valid': False,
+            'message': 'Folder ID и API Key обязательны'
+        }), 400
+    
+    # Запускаем проверку в отдельном event loop
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    is_valid, message = loop.run_until_complete(validate_credentials(folder_id, api_key))
+    loop.close()
+    
+    return jsonify({
+        'valid': is_valid,
+        'message': message
+    })
 
 
 @socketio.on('connect')
@@ -205,7 +278,7 @@ def handle_disconnect():
 
 
 @socketio.on('start_session')
-def handle_start_session():
+def handle_start_session(data=None):
     """Запуск новой голосовой сессии"""
     sid = request.sid
     
@@ -213,7 +286,18 @@ def handle_start_session():
         emit('error', {'message': 'Сессия уже запущена'})
         return
     
-    session = VoiceSession(sid)
+    if not data:
+        emit('error', {'message': 'Креденшалы не предоставлены'})
+        return
+    
+    folder_id = data.get('folder_id', '').strip()
+    api_key = data.get('api_key', '').strip()
+    
+    if not folder_id or not api_key:
+        emit('error', {'message': 'Креденшалы не предоставлены'})
+        return
+    
+    session = VoiceSession(sid, folder_id, api_key)
     active_sessions[sid] = session
     
     # Запускаем сессию в отдельном потоке
