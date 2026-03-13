@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#ffffff">
+    <title>Голосовой ассистент</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Шапка -->
+        <header class="header">
+            <div class="status-badge" id="statusBadge">
+                <span class="status-text">Готов к работе</span>
+            </div>
+        </header>
+
+        <!-- Основная область -->
+        <main class="main">
+            <!-- Анимированные точки -->
+            <div class="dots-container" id="dotsContainer">
+                <div class="dot dot-1"></div>
+                <div class="dot dot-2"></div>
+                <div class="dot dot-3"></div>
+                <div class="dot dot-4"></div>
+            </div>
+
+            <!-- Текстовая область для отображения диалога -->
+            <div class="transcript-area" id="transcriptArea">
+                <div class="transcript-placeholder">
+                    Нажмите на кнопку микрофона<br>и начните говорить
+                </div>
+            </div>
+        </main>
+
+        <!-- Подвал с кнопками -->
+        <footer class="footer">
+            <div class="controls">
+                <!-- Кнопка микрофона -->
+                <button class="btn-mic" id="micButton" aria-label="Микрофон">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 14C13.66 14 15 12.66 15 11V5C15 3.34 13.66 2 12 2C10.34 2 9 3.34 9 5V11C9 12.66 10.34 14 12 14Z" fill="currentColor"/>
+                        <path d="M17 11C17 14.31 14.31 17 11 17C7.69 17 5 14.31 5 11H3C3 14.87 6.13 18 10 18V22H14V18C17.87 18 21 14.87 21 11H17Z" fill="currentColor"/>
+                    </svg>
+                </button>
+
+                <!-- Кнопка стоп -->
+                <button class="btn-stop" id="stopButton" aria-label="Остановить" style="display: none;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6 6H18V18H6V6Z" fill="currentColor"/>
+                    </svg>
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Скрипты -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

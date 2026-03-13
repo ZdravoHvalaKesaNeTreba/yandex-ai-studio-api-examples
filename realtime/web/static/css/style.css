@@ -1,0 +1,409 @@
+/* Основные переменные в стиле Яндекс */
+:root {
+    --yandex-yellow: #FFCC00;
+    --yandex-black: #000000;
+    --yandex-red: #FF3333;
+    --yandex-gray: #666666;
+    --yandex-light-gray: #E6E6E6;
+    --background: #FFFFFF;
+    --text-primary: #000000;
+    --text-secondary: #666666;
+    --border-radius: 24px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Сброс стилей */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    background: var(--background);
+    color: var(--text-primary);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    touch-action: manipulation;
+}
+
+/* Контейнер */
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Шапка */
+.header {
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    transition: var(--transition);
+}
+
+.status-badge.active {
+    background: rgba(255, 51, 51, 0.1);
+    color: var(--yandex-red);
+}
+
+.status-badge.listening {
+    background: rgba(255, 204, 0, 0.2);
+    color: var(--yandex-black);
+}
+
+/* Основная область */
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    overflow: hidden;
+}
+
+/* Анимированные точки */
+.dots-container {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 60px;
+    height: 80px;
+    align-items: center;
+}
+
+.dot {
+    width: 40px;
+    height: 40px;
+    background: var(--yandex-black);
+    border-radius: 50%;
+    transition: var(--transition);
+    opacity: 0.3;
+}
+
+/* Анимация точек при прослушивании */
+.dots-container.listening .dot {
+    animation: pulse 1.5s ease-in-out infinite;
+    opacity: 1;
+}
+
+.dots-container.listening .dot-1 {
+    animation-delay: 0s;
+}
+
+.dots-container.listening .dot-2 {
+    animation-delay: 0.2s;
+}
+
+.dots-container.listening .dot-3 {
+    animation-delay: 0.4s;
+}
+
+.dots-container.listening .dot-4 {
+    animation-delay: 0.6s;
+}
+
+/* Анимация точек при разговоре */
+.dots-container.speaking .dot {
+    animation: wave 0.8s ease-in-out infinite;
+}
+
+.dots-container.speaking .dot-1 {
+    animation-delay: 0s;
+}
+
+.dots-container.speaking .dot-2 {
+    animation-delay: 0.1s;
+}
+
+.dots-container.speaking .dot-3 {
+    animation-delay: 0.2s;
+}
+
+.dots-container.speaking .dot-4 {
+    animation-delay: 0.3s;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}
+
+@keyframes wave {
+    0%, 100% {
+        transform: scaleY(1);
+    }
+    50% {
+        transform: scaleY(1.5);
+    }
+}
+
+/* Текстовая область */
+.transcript-area {
+    width: 100%;
+    max-width: 600px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 20px;
+    text-align: center;
+    -webkit-overflow-scrolling: touch;
+}
+
+.transcript-placeholder {
+    color: var(--text-secondary);
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.transcript-message {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    border-radius: 16px;
+    text-align: left;
+    font-size: 15px;
+    line-height: 1.4;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.transcript-message.user {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-primary);
+}
+
+.transcript-message.assistant {
+    background: rgba(255, 204, 0, 0.15);
+    color: var(--text-primary);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Подвал */
+.footer {
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+}
+
+.controls {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+/* Кнопка микрофона */
+.btn-mic {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: none;
+    background: var(--yandex-black);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-mic:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.btn-mic:active {
+    transform: scale(0.95);
+}
+
+.btn-mic.listening {
+    background: var(--yandex-yellow);
+    color: var(--yandex-black);
+    animation: pulse-button 2s ease-in-out infinite;
+}
+
+/* Кнопка стоп */
+.btn-stop {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: none;
+    background: var(--yandex-red);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    box-shadow: 0 4px 16px rgba(255, 51, 51, 0.3);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-stop:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(255, 51, 51, 0.4);
+}
+
+.btn-stop:active {
+    transform: scale(0.95);
+}
+
+@keyframes pulse-button {
+    0%, 100% {
+        box-shadow: 0 4px 16px rgba(255, 204, 0, 0.3);
+    }
+    50% {
+        box-shadow: 0 4px 24px rgba(255, 204, 0, 0.6);
+    }
+}
+
+/* Адаптивность для планшетов */
+@media (max-width: 768px) {
+    .header {
+        padding: 16px;
+    }
+    
+    .main {
+        padding: 16px;
+    }
+    
+    .dots-container {
+        margin-bottom: 40px;
+        height: 60px;
+    }
+    
+    .dot {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .transcript-area {
+        max-height: 250px;
+    }
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 480px) {
+    .header {
+        padding: 12px;
+    }
+    
+    .status-badge {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+    
+    .main {
+        padding: 12px;
+    }
+    
+    .dots-container {
+        gap: 8px;
+        margin-bottom: 30px;
+        height: 50px;
+    }
+    
+    .dot {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .transcript-area {
+        max-height: 200px;
+        padding: 16px;
+    }
+    
+    .transcript-placeholder {
+        font-size: 14px;
+    }
+    
+    .transcript-message {
+        font-size: 14px;
+        padding: 10px 14px;
+    }
+    
+    .footer {
+        padding: 16px;
+    }
+    
+    .btn-mic,
+    .btn-stop {
+        width: 64px;
+        height: 64px;
+    }
+    
+    .btn-mic svg,
+    .btn-stop svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* Для очень маленьких экранов */
+@media (max-width: 360px) {
+    .dots-container {
+        gap: 6px;
+    }
+    
+    .dot {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .btn-mic,
+    .btn-stop {
+        width: 56px;
+        height: 56px;
+    }
+}
+
+/* Скрытие скроллбара но сохранение функциональности */
+.transcript-area::-webkit-scrollbar {
+    width: 4px;
+}
+
+.transcript-area::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.transcript-area::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 2px;
+}
+
+.transcript-area::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
+}

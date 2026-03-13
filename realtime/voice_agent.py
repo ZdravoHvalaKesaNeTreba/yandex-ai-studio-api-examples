@@ -5,15 +5,16 @@ import asyncio
 import base64
 import json
 import logging
+import os
 import random
 import sys
 
 import aiohttp
 
 # Вспомогательные классы для работы с аудио. Можно использовать, можно реализовать самостоятельно.
-# pip install yandex-cloud-ml-sdk
-from yandex_cloud_ml_sdk._experimental.audio.microphone import AsyncMicrophone
-from yandex_cloud_ml_sdk._experimental.audio.out import AsyncAudioOut
+# pip install yandex-ai-studio-sdk
+from yandex_ai_studio_sdk._experimental.audio.microphone import AsyncMicrophone
+from yandex_ai_studio_sdk._experimental.audio.out import AsyncAudioOut
 
 assert sys.version_info >= (3, 10), "Python 3.10+ is required"
 
@@ -29,11 +30,15 @@ VOICE = "dasha"
 VECTOR_STORE_ID = "..."
 
 # ==== Креды Облака ====
-YANDEX_CLOUD_FOLDER_ID = "..."
-YANDEX_CLOUD_API_KEY = "..."
+# Загружаем из переменных окружения
+YANDEX_CLOUD_FOLDER_ID = os.getenv("YANDEX_CLOUD_FOLDER_ID", "")
+YANDEX_CLOUD_API_KEY = os.getenv("YANDEX_CLOUD_API_KEY", "")
 
 # Проверяем, что заданы ключ и ID каталога
-assert YANDEX_CLOUD_FOLDER_ID and YANDEX_CLOUD_API_KEY, "YANDEX_CLOUD_FOLDER_ID и YANDEX_CLOUD_API_KEY обязательны"
+assert YANDEX_CLOUD_FOLDER_ID and YANDEX_CLOUD_API_KEY, (
+    "YANDEX_CLOUD_FOLDER_ID и YANDEX_CLOUD_API_KEY обязательны. "
+    "Установите их в переменных окружения или в файле .env"
+)
 
 WSS_URL = (
     f"wss://rest-assistant.api.cloud.yandex.net/v1/realtime/openai"
